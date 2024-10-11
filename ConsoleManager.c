@@ -34,7 +34,7 @@ void drawPixel(int row, int col, int color){
     SetConsoleTextAttribute(hConsole, 7);
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow){
+void action01(){
     initTerminal();
     while(1){
         if(GetAsyncKeyState('Q') & 0x8000){
@@ -42,5 +42,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
     }
     FreeConsole();
+}
+
+void action02(){
+    AllocConsole();
+    FILE* fp;
+    freopen_s(&fp, "CONOUT$", "w", stdout);
+    freopen_s(&fp, "CONIN$", "r", stdin);
+    freopen_s(&fp, "CONERR$", "w", stderr);
+    printf("HELLO!\n");
+    Sleep(1000);
+    FreeConsole();
+}
+
+void action03(){
+    AllocConsole();
+    HANDLE wHnd = GetStdHandle(STD_OUTPUT_HANDLE);
+    HANDLE rHnd = GetStdHandle(STD_INPUT_HANDLE);
+    SetConsoleTitleA(TEXT("TestXYZ"));
+    Sleep(10000);
+    FreeConsole();
+}
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow){
+    action03();
     return 0;
 }
