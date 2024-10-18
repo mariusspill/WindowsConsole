@@ -10,10 +10,28 @@
 #define WHITE 7
 
 HANDLE hConsole;
+HANDLE readHandle;
+
+struct ConsoleEvent{
+    char type;
+    char code;
+    COORD coord;
+} typedef ConsoleEvent;
+
+void hideCursor(){
+    CONSOLE_CURSOR_INFO curInfo;
+    GetConsoleCursorInfo(hConsole, &curInfo);
+    curInfo.bVisible = FALSE;
+    SetConsoleCursorInfo(hConsole, &curInfo);
+}
 
 void initTerminal(){
     AllocConsole();
     hConsole = GetStdHandle(STD_OUTPUT_HANDLE); 
+    readHandle = GetStdHandle(STD_INPUT_HANDLE);
+    CONSOLE_CURSOR_INFO curInfo;
+    hideCursor();
+    SetConsoleMode(readHandle, ENABLE_MOUSE_INPUT | ENABLE_EXTENDED_FLAGS);
 }
 
 void writeChar(COORD pos, char c){
@@ -32,39 +50,48 @@ void drawPixel(int row, int col, int color){
     writeChar(pos, ' ');
     writeChar((COORD){pos.X + 1, pos.Y}, ' ');
     SetConsoleTextAttribute(hConsole, 7);
+    hideCursor();
 }
 
-void action01(){
-    initTerminal();
-    while(1){
-        if(GetAsyncKeyState('Q') & 0x8000){
-            break;
+ConsoleEvent getKey(){
+    DWORD eventCount;
+    DWORD eventsRead;
+    ConsoleEvent result;
+    GetNumberOfConsoleInputEvents(readHandle, &eventCount);
+    if (eventCount != 0) {
+        INPUT_RECORD *eventBuffer = malloc(eventCount * sizeof(INPUT_RECORD));
+        ReadConsoleInput(readHandle, eventBuffer, eventCount, &eventsRead);
+        for(int i = 0; i < eventsRead; i++){
+            if((eventBuffer + i)->EventType == KEY_EVENT){
+                result.type = 'k';
+                result.code = (eventBuffer + i)->Event.KeyEvent.uChar.AsciiChar;
+                break;
+            } else if ((eventBuffer + i)->EventType == MOUSE_EVENT) {
+                if ((eventBuffer + i)->Event.MouseEvent.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED){
+                    result.type = 'm';
+                    result.coord = (eventBuffer + i)->Event.MouseEvent.dwMousePosition;
+                    break;
+                }
+            }
         }
+        free(eventBuffer);
     }
-    FreeConsole();
-}
-
-void action02(){
-    AllocConsole();
-    FILE* fp;
-    freopen_s(&fp, "CONOUT$", "w", stdout);
-    freopen_s(&fp, "CONIN$", "r", stdin);
-    freopen_s(&fp, "CONERR$", "w", stderr);
-    printf("HELLO!\n");
-    Sleep(1000);
-    FreeConsole();
-}
-
-void action03(){
-    AllocConsole();
-    HANDLE wHnd = GetStdHandle(STD_OUTPUT_HANDLE);
-    HANDLE rHnd = GetStdHandle(STD_INPUT_HANDLE);
-    SetConsoleTitleA(TEXT("TestXYZ"));
-    Sleep(10000);
-    FreeConsole();
+    return result;
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow){
-    action03();
+    initTerminal();
+    drawPixel(3, 5, GREEN);
+    while(1){
+        ConsoleEvent event = getKey();
+        if(event.type == 'k' && event.code == 'q'){
+            break;
+        } else if (event.type == 'k' && event.code == 'w') {
+            drawPixel(5, 12, BLUE);
+        } else if (event.type == 'm'){
+            drawPixel(event.coord.X, event.coord.Y, BLUE);
+        }
+    }
+    FreeConsole();
     return 0;
 }
