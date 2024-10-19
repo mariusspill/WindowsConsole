@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "consolemanager.h": "c",
+        "windows.h": "c"
+    }
+}
