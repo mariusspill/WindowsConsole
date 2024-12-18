@@ -1,17 +1,12 @@
 #include "ConsoleManager.h"
 
-#define BLACK 0
-#define BLUE 1
-#define GREEN 2
-#define RED 4
-#define YELLOW 6
-#define WHITE 7
-
 ConsoleInstance console;
 
+/*
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow){
     test();
 }
+*/
 
 void setConsoleFontSize(int fontSize) {
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -81,14 +76,44 @@ void writeChar(COORD pos, char c){
 }
 
 void writeString(COORD pos, char* text){
-    SetConsoleCursorPosition(console.writeHandle, pos);
+    COORD loc;
+    loc.X = pos.X *2;
+    loc.Y = pos.Y;
+    enum ConsoleColor bgColor = getCellColor(pos.X, pos.Y);
+    enum ConsoleColor fgColor = BLACK;
+    if (bgColor == BLACK){
+        fgColor = WHITE;
+    };
+    SetConsoleTextAttribute(console.writeHandle, (bgColor << 4) | fgColor);
+    SetConsoleCursorPosition(console.writeHandle, loc);
     WriteConsole(console.writeHandle, text, strlen(text), NULL, NULL);
     hideCursor();
     int n = sizeof(text);
     for (int i = 0; i < n; i++){
         *(console.cellChar + (pos.Y * 2 * console.length + pos.X + i)) = *(text + i);        
     }
+    SetConsoleTextAttribute(console.writeHandle, 7);
 }
+
+void writeStringColor(COORD pos, char* text,enum ConsoleColor fgColor){
+    COORD loc;
+    loc.X = pos.X *2;
+    loc.Y = pos.Y;
+    enum ConsoleColor bgColor = getCellColor(pos.X, pos.Y);
+    if (bgColor == BLACK){
+        fgColor = WHITE;
+    };
+    SetConsoleTextAttribute(console.writeHandle, (bgColor << 4) | fgColor);
+    SetConsoleCursorPosition(console.writeHandle, loc);
+    WriteConsole(console.writeHandle, text, strlen(text), NULL, NULL);
+    hideCursor();
+    int n = sizeof(text);
+    for (int i = 0; i < n; i++){
+        *(console.cellChar + (pos.Y * 2 * console.length + pos.X + i)) = *(text + i);        
+    }
+    SetConsoleTextAttribute(console.writeHandle, 7);
+}
+
 
 void drawPixel(int col, int row, int color){
     COORD pos = {col * 2, row};
